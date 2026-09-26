@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ドコモ新料金プラン クイックチェック (2026/09/25発表)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* カードの3Dフリップ用CSS */
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+    .transform-style-3d {
+      transform-style: preserve-3d;
+    }
+    .backface-hidden {
+      backface-visibility: hidden;
+    }
+    .rotate-y-180 {
+      transform: rotateY(180deg);
+    }
+    .card-transition {
+      transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+    }
+    /* クリック時のハイライトを無効化 */
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col items-center py-10 px-4">
+
+  <div class="max-w-2xl w-full">
+    <!-- ヘッダー -->
+    <div class="text-center mb-8">
+      <h1 class="text-2xl md:text-3xl font-bold text-red-600 mb-2">ドコモ新料金プラン<br class="md:hidden"> クイックチェック</h1>
+      <p class="text-sm text-gray-500">2026年9月25日発表内容・販売員向けマニュアル</p>
+    </div>
+
+    <!-- 進捗カウンター -->
+    <div class="flex justify-between items-center mb-4 px-2">
+      <span id="category-badge" class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200">カテゴリ</span>
+      <span id="counter" class="text-gray-500 font-medium text-sm">1 / 30</span>
+    </div>
+
+    <!-- 単語帳カード本体 -->
+    <div class="perspective-1000 w-full h-80 md:h-64 mb-8 cursor-pointer" onclick="flipCard()">
+      <div id="card-inner" class="relative w-full h-full transform-style-3d card-transition shadow-lg rounded-xl">
+        
+        <!-- 表面 (問題) -->
+        <div class="absolute w-full h-full backface-hidden bg-white border border-gray-200 rounded-xl flex flex-col justify-center items-center p-6 md:p-8">
+          <span class="absolute top-4 left-4 text-gray-400 font-bold">Q.</span>
+          <p id="question-text" class="text-lg md:text-xl font-bold text-center leading-relaxed text-gray-800"></p>
+          <span class="absolute bottom-4 text-xs text-gray-400">タップして答えを見る</span>
+        </div>
+
+        <!-- 裏面 (答え・販売員向けアドバイス) -->
+        <div class="absolute w-full h-full backface-hidden rotate-y-180 bg-red-50 border border-red-200 rounded-xl flex flex-col justify-center items-center p-6 md:p-8">
+          <span class="absolute top-4 left-4 text-red-400 font-bold">A.</span>
+          <p id="answer-text" class="text-base md:text-lg font-medium text-center leading-relaxed text-red-900"></p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- コントロールボタン -->
+    <div class="flex flex-col space-y-4">
+      <div class="flex justify-between space-x-4">
+        <button onclick="prevCard()" class="flex-1 bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-bold shadow-sm hover:bg-gray-50 transition">前の問題</button>
+        <button onclick="flipCard()" class="flex-1 bg-red-600 text-white py-3 rounded-lg font-bold shadow-md hover:bg-red-700 transition">めくる</button>
+        <button onclick="nextCard()" class="flex-1 bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-bold shadow-sm hover:bg-gray-50 transition">次の問題</button>
+      </div>
+      <button onclick="shuffleCards()" class="w-full bg-gray-800 text-white py-3 rounded-lg font-bold shadow-md hover:bg-gray-900 transition mt-4">
+        🔀 問題をシャッフルする
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 問題データ (全30問：ネガティブ回避の接客視点を含む)
+    const masterData = [
+      // ahamo リニューアル
+      { cat: "ahamoリニューアル", q: "ahamoの新しい料金体系（データ段階）はどう変わりますか？", a: "お客さまの利用状況に合わせて無駄なく使えるよう、「40GB・60GB・120GB」の3段階制に進化します。" },
+      { cat: "ahamoリニューアル", q: "ahamoの40GB利用時の月額料金は？", a: "月額3,135円（税込）です。お値段そのままで、今まで以上にたっぷりデータ通信をお楽しみいただけます。" },
+      { cat: "ahamoリニューアル", q: "使いすぎを防ぐための新しいオプションは何ですか？", a: "「上限設定オプション」です。無料で利用可能データ量の上限を設定でき、安心してお使いいただける点をアピールします。" },
+      { cat: "ahamoリニューアル", q: "既存のahamoユーザーへの上限設定はどうなりますか？", a: "急な料金変動の不安をなくすため、12月1日から自動で「上限設定40GB」が適用されるので安心だとお伝えします。" },
+      { cat: "ahamoリニューアル", q: "段階制への変更によるお客様のメリットはどうお伝えしますか？", a: "「追加のデータ容量をわざわざ購入する手間がなくなり、使った分だけ自動で適用されるため非常に便利になりましたよ」とご案内します。" },
+      { cat: "ahamoリニューアル", q: "「爆アゲ セレクション」の還元内容はどう変わりますか？", a: "対象サービスの月額料金に対して最大25％のdポイント（期間・用途限定）が還元され、エンタメがよりおトクに楽しめるとお勧めします。" },
+      { cat: "ahamoリニューアル", q: "ahamoの新しい料金プランの提供開始日は？", a: "2026年12月1日（火曜）です。" },
+      { cat: "ahamoリニューアル", q: "ahamoでの海外利用データ量はどうご案内しますか？", a: "「たっぷり40GBに増量され、海外旅行や出張でもルーター要らずでより安心してお使いいただけます」と訴求します。" },
+      
+      // ドコモ mini2
+      { cat: "ドコモ mini2", q: "「ドコモ mini2」はどのようなお客様におすすめですか？", a: "データ利用量が比較的少なく、ご家族でドコモをおトクに利用したいお客様にぴったりの新プランです。" },
+      { cat: "ドコモ mini2", q: "「ドコモ mini2」のデータ容量の段階はどうなっていますか？", a: "月間データ利用量に応じて「～6GB」と「～12GB」の2段階で、より細やかにニーズにお応えできるようになりました。" },
+      { cat: "ドコモ mini2", q: "6GB利用時、各種割引を最大適用すると月額いくらですか？", a: "なんと月額858円（税込）からと、大変リーズナブルにご利用いただけます。" },
+      { cat: "ドコモ mini2", q: "家族間国内通話無料には対応していますか？", a: "はい、対応しております。「ご家族同士での長時間の通話も追加料金なしであんしんです」とお伝えします。" },
+      { cat: "ドコモ mini2", q: "「みんなドコモ割」は適用されますか？", a: "はい、適用されます。ご家族皆様でドコモをご利用いただくメリットとして強調しましょう。" },
+      { cat: "ドコモ mini2", q: "60歳以上のお客様が「かけ放題オプション」をつける場合の特典は？", a: "通常1,980円（税込）のところ、月額990円（税込）でおトクにかけ放題をご利用いただける点をご案内します。" },
+      { cat: "ドコモ mini2", q: "従来の「ドコモ mini」の新規受付終了日は？", a: "2026年11月30日（月曜）で新規受付を終了しますが、以後はさらに柔軟になった「mini2」をご案内できます。" },
+      { cat: "ドコモ mini2", q: "「ドコモ mini」を利用中のお客様からの「使えなくなるの？」という質問への回答は？", a: "「ご安心ください、今のままでも引き続きご利用いただけます。ただ、新しい『mini2』ならお客様の使い方によってはさらにおトクになる可能性がありますよ」と前向きに答えます。" },
+      { cat: "ドコモ mini2", q: "「dカードお支払割」の最大割引（550円割引）の適用条件は？", a: "「dカード PLATINUM」「dカード GOLD」「dカード GOLD U」のいずれかをご利用の場合となります。" },
+      { cat: "ドコモ mini2", q: "旧プランから「mini2」へ切り替える際、どうお得感をアピールしますか？", a: "「使わなかった月は安く、少し多い月でも12GBまで安心の2段階制で、ライフスタイルに合わせやすくなりました」とお伝えします。" },
+      
+      // MAX 60歳以上割
+      { cat: "MAX 60歳以上割", q: "「ドコモ MAX 60歳以上割」の提供開始日は？", a: "2026年10月1日（木曜）から提供開始し、シニア世代へ新しい楽しみをご提案します。" },
+      { cat: "MAX 60歳以上割", q: "「ドコモ MAX 60歳以上割」の割引期間はどのくらいですか？", a: "最大3か月間となります。「まずはお試し感覚で、リッチなコンテンツをお楽しみいただく良いきっかけになりますよ」とご案内します。" },
+      { cat: "MAX 60歳以上割", q: "「ドコモ MAX 60歳以上割」の最大割引額はいくらですか？", a: "月額最大2,970円（税込）という大幅な割引で、ドコモ MAXの魅力を存分に体験していただけます。" },
+      { cat: "MAX 60歳以上割", q: "各種割引を併用すると、「ドコモ MAX」は月額いくらから利用可能ですか？", a: "最大3か月間、月額858円（税込）からという驚きの価格でスタートできる点を強くアピールします。" },
+      { cat: "MAX 60歳以上割", q: "割引適用期間中、進呈されるボーナスパケットはどれくらいですか？", a: "+27GBが進呈され、動画などのコンテンツをデータ量を気にせずたっぷり楽しんでいただけます。" },
+      { cat: "MAX 60歳以上割", q: "60歳以上のお客様に「ドコモ MAX」のどんなメリットを強調しますか？", a: "音楽ライブの招待やスポーツ観戦チケットなど「特別な体験価値」をおトクに楽しめる点をお伝えし、ワクワク感を提供します。" },
+      
+      // 既存プラン改定・接客姿勢
+      { cat: "既存プラン改定", q: "一部の旧料金プランの月額料金改定（値上げ）について、お客様にはどうご説明しますか？", a: "「今後も安定した通信サービスと高品質なサポートを継続してご提供するため」と前向きな理由を誠実にお伝えします。" },
+      { cat: "既存プラン改定", q: "月額料金が改定されるのは主にどのようなプランですか？", a: "新規受付を終了している一部の旧料金プランが中心となります。" },
+      { cat: "既存プラン改定", q: "旧プランの料金改定に直面したお客様へ、ネガティブな印象を与えないための声かけは？", a: "「安定した品質を保つための改定ですが、この機会にご利用状況を見直してみませんか？よりお安くなる最新プランがあるかもしれません！」とプラン診断へ誘導します。" },
+      { cat: "既存プラン改定", q: "旧プランの料金改定の実施日はいつですか？", a: "2026年12月1日（火曜）からです。" },
+      { cat: "接客の心構え", q: "お客様にプラン変更を提案する際、伝えるべきドコモの姿勢は何ですか？", a: "お客様のライフスタイルやライフステージの変化に寄り添い、最適なサービスへ進化し続けるという姿勢です。" },
+      { cat: "接客の心構え", q: "今回の新プラン提供・料金改定にあたり、販売員として目指すことは？", a: "お客様の利用実態を丁寧にヒアリングし、「無駄なく」「安心に」「楽しく」使える最適なプランをご案内し、満足度を高めることです。" }
+    ];
+
+    let flashcards = [...masterData];
+    let currentIndex = 0;
+    let isFlipped = false;
+
+    const cardInner = document.getElementById('card-inner');
+    const questionText = document.getElementById('question-text');
+    const answerText = document.getElementById('answer-text');
+    const categoryBadge = document.getElementById('category-badge');
+    const counter = document.getElementById('counter');
+
+    // 初期化
+    function init() {
+      updateCard();
+    }
+
+    // カードの表示更新
+    function updateCard() {
+      // 表示前に表面に戻す
+      if(isFlipped) {
+        cardInner.classList.remove('rotate-y-180');
+        isFlipped = false;
+        setTimeout(() => setContent(), 300); // アニメーションの途中で文字を変える
+      } else {
+        setContent();
+      }
+    }
+
+    // テキストコンテンツのセット
+    function setContent() {
+      const current = flashcards[currentIndex];
+      questionText.innerText = current.q;
+      answerText.innerText = current.a;
+      categoryBadge.innerText = current.cat;
+      counter.innerText = `${currentIndex + 1} / ${flashcards.length}`;
+    }
+
+    // カードをめくる
+    function flipCard() {
+      isFlipped = !isFlipped;
+      if (isFlipped) {
+        cardInner.classList.add('rotate-y-180');
+      } else {
+        cardInner.classList.remove('rotate-y-180');
+      }
+    }
+
+    // 次の問題へ
+    function nextCard() {
+      currentIndex = (currentIndex + 1) % flashcards.length;
+      updateCard();
+    }
+
+    // 前の問題へ
+    function prevCard() {
+      currentIndex = (currentIndex - 1 + flashcards.length) % flashcards.length;
+      updateCard();
+    }
+
+    // シャッフル機能 (Fisher-Yates)
+    function shuffleCards() {
+      for (let i = flashcards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [flashcards[i], flashcards[j]] = [flashcards[j], flashcards[i]];
+      }
+      currentIndex = 0;
+      updateCard();
+      alert("問題をシャッフルしました！");
+    }
+
+    // 起動時に初期化
+    window.onload = init;
+  </script>
+</body>
+</html>
